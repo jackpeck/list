@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-k = 5
+k = 10
 
 
 torch.manual_seed(0)
@@ -11,7 +11,7 @@ torch.manual_seed(0)
 class Model(nn.Module):
     def __init__(self):
         super().__init__()
-        self.l1 = nn.Linear(k, 128)
+        self.l1 = nn.Embedding(k, 128)
         self.l2 = nn.Linear(128, k)
 
     def forward(self, x):
@@ -22,8 +22,6 @@ class Model(nn.Module):
 
 
 model = Model()
-model(F.one_hot(torch.tensor(0), k).float())
-
 
 inputs = torch.arange(k)
 targets = inputs
@@ -37,8 +35,7 @@ for step in range(n_steps):
     indices_sample = torch.randperm(inputs.size(0))[:batch_sz]
     inputs_sample = inputs[indices_sample]
     targets_sample = targets[indices_sample]
-    inputs_one_hot_sample = F.one_hot(inputs_sample, k).float()
-    out = model(inputs_one_hot_sample)
+    out = model(inputs_sample)
     loss = F.cross_entropy(out, targets_sample)
     loss.backward()
     optimizer.step()
@@ -46,4 +43,4 @@ for step in range(n_steps):
         print(loss.item())
 
 
-print(model(F.one_hot(inputs).float()))
+print(model(inputs))
