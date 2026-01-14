@@ -7,6 +7,8 @@ list_len = 3
 
 torch.manual_seed(0)
 
+device = torch.device("mps")
+
 
 class Model(nn.Module):
     def __init__(self, dim=128):
@@ -26,7 +28,7 @@ class Model(nn.Module):
         return y
 
     def enc_seq(self, items):
-        initial_state = torch.zeros(items.size(0), self.dim)
+        initial_state = torch.zeros(items.size(0), self.dim, device=device)
         state = initial_state
         for i in range(list_len):
             state = model.encoder(items[:, i], state)
@@ -39,12 +41,12 @@ class Model(nn.Module):
         return y
 
 
-model = Model()
+model = Model().to(device)
 
 
 inputs = torch.cartesian_prod(
     *[torch.arange(k) for _ in range(list_len)], torch.arange(list_len)
-)
+).to(device)
 targets = inputs[torch.arange(inputs.size(0)), inputs[:, list_len]]
 
 
