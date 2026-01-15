@@ -56,13 +56,6 @@ inputs = torch.cartesian_prod(
 targets = inputs[torch.arange(inputs.size(0)), inputs[:, list_len]]
 
 
-# out = model.encoder(inputs[:, 0], torch.zeros(model.dim))
-# out = model.encoder(inputs[:, 1], out)
-# out = model.encoder(inputs[:, 2], out)
-
-# out = model.enc_seq(inputs)
-# out = model.decoder(out, inputs[:, list_len])
-
 train_mask = ~(inputs[:, 1] == 0)
 print(train_mask, train_mask.sum(), inputs.size(0))
 inputs_train = inputs[train_mask]
@@ -128,15 +121,9 @@ for step in range(n_steps):
             out = model.decoder(out, inputs_train[:, list_len])
             train_loss = F.cross_entropy(out, targets_train)
 
-            # out = model.enc_seq(inputs[train_mask])
-            # out = model.decoder(out, inputs[train_mask][:, list_len])
-            # loss = F.cross_entropy(out, targets[train_mask])
-            # # print(loss)
-
             out = model.enc_seq(inputs[~train_mask])
             out = model.decoder(out, inputs[~train_mask][:, list_len])
             test_loss = F.cross_entropy(out, targets[~train_mask])
-            # print(test_loss)
 
             print(
                 step,
@@ -155,14 +142,3 @@ for step in range(n_steps):
                 },
                 checkpoint_path,
             )
-
-    # out = model.enc_seq(inputs_train)
-    # out = model.decoder(out, inputs_train[:, list_len])
-    # loss = F.cross_entropy(out, targets_train)
-    # print(step, "loss", loss.item())
-
-# out = model.enc_seq(inputs)
-# out = model.decoder(out, inputs[:, list_len])
-# loss = F.cross_entropy(out, targets)
-# print(out)
-# print(loss.item())
