@@ -83,9 +83,10 @@ from pathlib import Path
 
 os.makedirs("runs", exist_ok=True)
 
-timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+day = datetime.now().strftime("%Y%m%d")
+time = datetime.now().strftime("%H%M%S")
 run_prefix_name = "encode_items_sequentially"
-run_dir = Path("runs") / run_prefix_name / timestamp
+run_dir = Path("runs") / run_prefix_name / day / time
 os.makedirs(run_dir, exist_ok=True)
 git_diff = subprocess.run(["git", "diff"], capture_output=True, text=True).stdout
 (run_dir / "diff.patch").write_text(git_diff)
