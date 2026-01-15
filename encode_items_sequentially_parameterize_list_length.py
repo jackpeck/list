@@ -65,7 +65,7 @@ batch_sz = 999999999
 n_steps = 1000000
 
 optimizer = torch.optim.AdamW(
-    model.parameters(), lr=1e-3, weight_decay=1.0, betas=(0.9, 0.98)
+    model.parameters(), lr=1e-3, weight_decay=0.5, betas=(0.9, 0.97)
 )
 
 
@@ -83,6 +83,8 @@ run_dir = Path("runs") / run_prefix_name / day / time
 os.makedirs(run_dir, exist_ok=True)
 git_diff = subprocess.run(["git", "diff"], capture_output=True, text=True).stdout
 (run_dir / "diff.patch").write_text(git_diff)
+
+print("run_dir", run_dir)
 
 
 # if os.path.exists(checkpoint):
@@ -124,10 +126,11 @@ for step in range(n_steps):
             out = model.enc_seq(inputs[~train_mask])
             out = model.decoder(out, inputs[~train_mask][:, list_len])
             test_loss = F.cross_entropy(out, targets[~train_mask])
+            test_acc = (out.argmax(-1) == targets[~train_mask]).float().mean()
 
             print(
                 step,
-                f"val_loss={val_loss.item():.6g} train_loss={train_loss.item():.6g} test_loss={test_loss.item():.6g}",
+                f"val_loss={val_loss.item():.6g} train_loss={train_loss.item():.6g} test_loss={test_loss.item():.6g} test_acc={test_acc.item():.4f}",
             )
 
         checkpoint_path = run_dir / f"step_{step}.pt"
