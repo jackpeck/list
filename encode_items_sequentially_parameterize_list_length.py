@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-k = 13
+k = 29
 list_len = 3
 
 torch.manual_seed(0)
@@ -112,7 +112,7 @@ for step in range(n_steps):
             step, loss.item(), (out.argmax(-1) == targets_sample).float().mean().item()
         )
 
-    if step % 1000 == 0 or step == n_steps - 1:
+    if step % 100 == 0 or step == n_steps - 1:
         with torch.no_grad():
             out = model.enc_seq(inputs)
             out = model.decoder(out, inputs[:, list_len])
