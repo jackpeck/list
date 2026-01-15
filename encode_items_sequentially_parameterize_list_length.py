@@ -26,10 +26,6 @@ class Model(nn.Module):
     def encoder(self, item, prior_state):
         x = self.l1(item)
         y = x + prior_state
-        y = F.relu(y)
-        # y = y + self.l2(y)
-        # return y
-
         y = self.l2(y)
         return y
 
