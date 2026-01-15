@@ -31,7 +31,7 @@ class Model(nn.Module):
         initial_state = torch.zeros(items.size(0), self.dim, device=device)
         state = initial_state
         for i in range(list_len):
-            state = model.encoder(items[:, i], state)
+            state = self.encoder(items[:, i], state)
         return state
 
     def decoder(self, state, attribute_index):
@@ -66,9 +66,7 @@ batch_sz = 999999999
 n_steps = 1000000
 
 optimizer = torch.optim.AdamW(
-    model.parameters(),
-    lr=1e-3,
-    weight_decay=1.0,  # , betas=(0.9, 0.98)
+    model.parameters(), lr=1e-3, weight_decay=1.0, betas=(0.9, 0.98)
 )
 
 for step in range(n_steps):
