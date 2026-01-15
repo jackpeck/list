@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-k = 37
+k = 13
 list_len = 3
 
 torch.manual_seed(0)
@@ -11,7 +11,7 @@ device = torch.device("mps")
 
 
 class Model(nn.Module):
-    def __init__(self, dim=128):
+    def __init__(self, dim=16):
         super().__init__()
         self.dim = dim
 
@@ -20,11 +20,14 @@ class Model(nn.Module):
         self.l3 = nn.Linear(dim, k, bias=False)
         self.embed_attribute_index = nn.Embedding(list_len, dim)
 
+        self.l4 = nn.Linear(dim, dim * 4)
+        self.l5 = nn.Linear(dim * 4, dim)
+
     def encoder(self, item, prior_state):
         x = self.l1(item)
         y = x + prior_state
         y = F.relu(y)
-        y = self.l2(y)
+        y = y + self.l2(y)
         return y
 
     def enc_seq(self, items):
@@ -36,7 +39,10 @@ class Model(nn.Module):
 
     def decoder(self, state, attribute_index):
         y = state + self.embed_attribute_index(attribute_index)
-        y = F.relu(y)
+        z = self.l4(y)
+        z = F.relu(z)
+        z = self.l5(z)
+        y = y + z
         y = self.l3(y)
         return y
 
@@ -68,6 +74,31 @@ n_steps = 1000000
 optimizer = torch.optim.AdamW(
     model.parameters(), lr=1e-3, weight_decay=1.0, betas=(0.9, 0.98)
 )
+
+
+import os
+import subprocess
+from datetime import datetime
+from pathlib import Path
+
+os.makedirs("runs", exist_ok=True)
+
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+run_prefix_name = "encode_items_sequentially"
+run_dir = Path("runs") / run_prefix_name / timestamp
+os.makedirs(run_dir, exist_ok=True)
+git_diff = subprocess.run(["git", "diff"], capture_output=True, text=True).stdout
+(run_dir / "diff.patch").write_text(git_diff)
+
+
+# if os.path.exists(checkpoint):
+#     checkpoint = torch.load(checkpoint, map_location=device)
+#     model.load_state_dict(checkpoint["model"])
+#     optimizer.load_state_dict(checkpoint["optimizer"])
+#     start_step = checkpoint["step"] + 1
+#     torch.random.set_rng_state(checkpoint["rng_state"])
+#     print(f"resumed from step {start_step}")
+
 
 for step in range(n_steps):
     optimizer.zero_grad()
@@ -108,7 +139,20 @@ for step in range(n_steps):
 
             print(
                 step,
-                f"val_loss={val_loss.item():.6f} train_loss={train_loss.item():.6f} test_loss={test_loss.item():.6f}",
+                f"val_loss={val_loss.item():.6g} train_loss={train_loss.item():.6g} test_loss={test_loss.item():.6g}",
+            )
+
+        checkpoint_path = run_dir / f"step_{step}.pt"
+
+        if step > 0 and step % 10000 == 0 or step == n_steps - 1:
+            torch.save(
+                {
+                    "step": step,
+                    "model": model.state_dict(),
+                    "optimizer": optimizer.state_dict(),
+                    "rng_state": torch.random.get_rng_state(),
+                },
+                checkpoint_path,
             )
 
     # out = model.enc_seq(inputs_train)
