@@ -125,8 +125,26 @@ print(out_logits, F.softmax(out_logits, dim=-1))
 # print(model.l2.weight)
 print(model.l1.weight)
 
-# 3D plot of l1 embeddings
-embeddings = model.l1.weight.detach().cpu().numpy()
+# # 3D plot of l1 embeddings
+# embeddings = model.l1.weight
+
+# embeddings2 = model.l2(embeddings)
+# embeddings3 = model.l2(embeddings2)
+# embeddings = torch.cat([embeddings, embeddings2, embeddings3])
+
+embeddings = model.enc_seq(inputs[:])
+
+# state = embeddings
+# y = state + model.embed_attribute_index(inputs[k])
+# z = model.l4(y)
+# z = F.relu(z)
+# z = model.l5(z)
+
+
+# embeddings = model.embed_attribute_index.weight
+
+embeddings = embeddings.detach().cpu().numpy()
+
 
 fig = plt.figure(figsize=(10, 8))
 ax = fig.add_subplot(111, projection="3d")
@@ -136,11 +154,11 @@ ax.scatter(
     embeddings[:, 1],
     embeddings[:, 2],
     s=100,
-    c=range(k),
+    c=range(embeddings.shape[0]),
     cmap="viridis",
 )
 
-for i in range(k):
+for i in range(embeddings.shape[0]):
     ax.text(embeddings[i, 0], embeddings[i, 1], embeddings[i, 2], str(i), fontsize=12)
 
 ax.set_xlabel("Dim 0")
