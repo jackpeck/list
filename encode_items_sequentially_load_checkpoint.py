@@ -10,7 +10,7 @@ from sklearn.decomposition import PCA
 device = torch.device("mps")
 
 
-k = 13
+k = 7
 list_len = 3
 
 torch.manual_seed(0)
@@ -19,7 +19,7 @@ device = torch.device("mps")
 
 
 class Model(nn.Module):
-    def __init__(self, dim=16):
+    def __init__(self, dim=3):
         super().__init__()
         self.dim = dim
 
@@ -69,7 +69,7 @@ inputs_train = inputs[train_mask]
 targets_train = targets[train_mask]
 
 
-checkpoint_path = "runs/encode_items_sequentially/20260116/164944/step_10000.pt"
+checkpoint_path = "runs/encode_items_sequentially/20260116/175325/step_20000.pt"
 
 
 if os.path.exists(checkpoint_path):
@@ -121,4 +121,35 @@ print(out_logits, F.softmax(out_logits, dim=-1))
 # plt.savefig(save_path)
 
 
-print(torch.clamp(model.l2.weight, min=0))
+# print(torch.clamp(model.l2.weight, min=0))
+# print(model.l2.weight)
+print(model.l1.weight)
+
+# 3D plot of l1 embeddings
+embeddings = model.l1.weight.detach().cpu().numpy()
+
+fig = plt.figure(figsize=(10, 8))
+ax = fig.add_subplot(111, projection="3d")
+
+ax.scatter(
+    embeddings[:, 0],
+    embeddings[:, 1],
+    embeddings[:, 2],
+    s=100,
+    c=range(k),
+    cmap="viridis",
+)
+
+for i in range(k):
+    ax.text(embeddings[i, 0], embeddings[i, 1], embeddings[i, 2], str(i), fontsize=12)
+
+ax.set_xlabel("Dim 0")
+ax.set_ylabel("Dim 1")
+ax.set_zlabel("Dim 2")
+ax.set_title("model.l1.weight (Embeddings)")
+
+# os.makedirs("plots", exist_ok=True)
+# timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+# save_path = f"plots/l1_weight_3d-{timestamp}.png"
+# plt.savefig(save_path)
+plt.show()
