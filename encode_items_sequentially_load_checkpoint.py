@@ -155,7 +155,7 @@ y = state + model.embed_attribute_index(inputs[:, list_len])
 # z = model.l5(z)
 # y = y + z
 # y = z
-# embeddings = y
+embeddings = y
 
 print(inputs[27 : 27 + 4])
 print(inputs[:, list_len][27 : 27 + 4])
