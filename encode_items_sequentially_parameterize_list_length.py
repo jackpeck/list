@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-k = 29
+k = 7
 list_len = 3
 
 torch.manual_seed(0)
@@ -11,7 +11,7 @@ device = torch.device("mps")
 
 
 class Model(nn.Module):
-    def __init__(self, dim=16):
+    def __init__(self, dim=3):
         super().__init__()
         self.dim = dim
 
@@ -64,7 +64,11 @@ batch_sz = 999999999
 n_steps = 1000000
 
 optimizer = torch.optim.AdamW(
-    model.parameters(), lr=1e-3, weight_decay=0.5, betas=(0.9, 0.97)
+    # model.parameters(), lr=1e-5, weight_decay=1.0, betas=(0.9, 0.95)
+    model.parameters(),
+    lr=1e-3,
+    weight_decay=0.05,
+    betas=(0.9, 0.99),
 )
 
 
