@@ -81,12 +81,26 @@ if os.path.exists(checkpoint_path):
     torch.random.set_rng_state(checkpoint["rng_state"].cpu())
     # print(f"resumed from step {start_step}")
 
+
+# Permute l1 embedding weights: reorder rows from 0152346 to 0123456
+perm = [
+    0,
+    1,
+    5,
+    2,
+    3,
+    4,
+    6,
+]  # this is the order the values seems to be encoded in. plotting model.l1.weight shows a straight line in 3d. see plots/l1_weight_3d-20260116-175750.png
+model.l1.weight.data = model.l1.weight.data[perm]
+model.l3.weight.data = model.l3.weight.data[perm]
+
 out = model.enc_seq(inputs[~train_mask])
 out = model.decoder(out, inputs[~train_mask][:, list_len])
 test_loss = F.cross_entropy(out, targets[~train_mask])
 test_acc = (out.argmax(-1) == targets[~train_mask]).float().mean()
 
-# print(f"test_loss={test_loss.item():.6g}, test_acc={test_acc.item():.6f}")
+print(f"test_loss={test_loss.item():.6g}, test_acc={test_acc.item():.6f}")
 
 
 out_enc = model.enc_seq(inputs[1:2])
@@ -134,14 +148,31 @@ print(model.l1.weight)
 
 embeddings = model.enc_seq(inputs[:])
 
-# state = embeddings
-# y = state + model.embed_attribute_index(inputs[k])
+state = embeddings
+y = state + model.embed_attribute_index(inputs[:, list_len])
 # z = model.l4(y)
 # z = F.relu(z)
 # z = model.l5(z)
+# y = y + z
+# y = z
+# embeddings = y
+
+print(inputs[27 : 27 + 4])
+print(inputs[:, list_len][27 : 27 + 4])
+print(targets[27 : 27 + 4])
+print(embeddings[27 : 27 + 4])
+# exit()
+
+# embeddings = embeddings[:10]
 
 
 # embeddings = model.embed_attribute_index.weight
+
+# print("l3", model.l3.weight)
+# embeddings = model.l3.weight
+
+# embeddings = torch.cat([embeddings, model.l3.weight])
+
 
 embeddings = embeddings.detach().cpu().numpy()
 
@@ -149,17 +180,35 @@ embeddings = embeddings.detach().cpu().numpy()
 fig = plt.figure(figsize=(10, 8))
 ax = fig.add_subplot(111, projection="3d")
 
+# embeddings = embeddings[:10]
+
 ax.scatter(
     embeddings[:, 0],
     embeddings[:, 1],
     embeddings[:, 2],
     s=100,
-    c=range(embeddings.shape[0]),
+    # c=range(embeddings.shape[0]),
+    # c=inputs[: embeddings.shape[0], list_len].cpu().numpy(),
+    # c=targets[: embeddings.shape[0]].cpu().numpy(),
+    c=torch.stack(
+        [
+            inputs[: embeddings.shape[0], 0],
+            inputs[: embeddings.shape[0], 1],
+            inputs[: embeddings.shape[0], 2],
+        ],
+        dim=1,
+    )
+    .float()
+    .cpu()
+    .numpy()
+    / (k - 1),
     cmap="viridis",
 )
 
-for i in range(embeddings.shape[0]):
-    ax.text(embeddings[i, 0], embeddings[i, 1], embeddings[i, 2], str(i), fontsize=12)
+# for i in range(embeddings.shape[0]):
+#     # s = str(i)
+#     s = str(inputs[i].cpu().numpy())
+#     ax.text(embeddings[i, 0], embeddings[i, 1], embeddings[i, 2], s, fontsize=12)
 
 ax.set_xlabel("Dim 0")
 ax.set_ylabel("Dim 1")
