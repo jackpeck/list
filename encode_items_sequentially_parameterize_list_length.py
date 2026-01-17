@@ -66,9 +66,9 @@ n_steps = 1000000
 optimizer = torch.optim.AdamW(
     # model.parameters(), lr=1e-5, weight_decay=1.0, betas=(0.9, 0.95)
     model.parameters(),
-    lr=1e-3,
-    weight_decay=0.05,
-    betas=(0.9, 0.99),
+    lr=3e-4,
+    weight_decay=0.04,
+    betas=(0.9, 0.95),
 )
 
 
