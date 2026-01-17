@@ -1,0 +1,124 @@
+import os
+from datetime import datetime
+
+import matplotlib.pyplot as plt
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+from sklearn.decomposition import PCA
+
+device = torch.device("mps")
+
+
+k = 13
+list_len = 3
+
+torch.manual_seed(0)
+
+device = torch.device("mps")
+
+
+class Model(nn.Module):
+    def __init__(self, dim=16):
+        super().__init__()
+        self.dim = dim
+
+        self.l1 = nn.Embedding(k, dim)
+        self.l2 = nn.Linear(dim, dim, bias=False)
+        self.l3 = nn.Linear(dim, k, bias=False)
+        self.embed_attribute_index = nn.Embedding(list_len, dim)
+
+        self.l4 = nn.Linear(dim, dim * 4)
+        self.l5 = nn.Linear(dim * 4, dim)
+
+    def encoder(self, item, prior_state):
+        x = self.l1(item)
+        y = x + prior_state
+        y = self.l2(y)
+        return y
+
+    def enc_seq(self, items):
+        initial_state = torch.zeros(items.size(0), self.dim, device=device)
+        state = initial_state
+        for i in range(list_len):
+            state = self.encoder(items[:, i], state)
+        return state
+
+    def decoder(self, state, attribute_index):
+        y = state + self.embed_attribute_index(attribute_index)
+        z = self.l4(y)
+        z = F.relu(z)
+        z = self.l5(z)
+        y = y + z
+        y = self.l3(y)
+        return y
+
+
+model = Model().to(device)
+
+
+inputs = torch.cartesian_prod(
+    *[torch.arange(k) for _ in range(list_len)], torch.arange(list_len)
+).to(device)
+targets = inputs[torch.arange(inputs.size(0)), inputs[:, list_len]]
+
+
+train_mask = ~(inputs[:, 1] == 0)
+# print(train_mask, train_mask.sum(), inputs.size(0))
+inputs_train = inputs[train_mask]
+targets_train = targets[train_mask]
+
+
+checkpoint_path = "runs/encode_items_sequentially/20260116/164944/step_10000.pt"
+
+
+if os.path.exists(checkpoint_path):
+    checkpoint = torch.load(checkpoint_path, map_location=device)
+    # exit()
+    model.load_state_dict(checkpoint["model"])
+    # optimizer.load_state_dict(checkpoint["optimizer"])
+    start_step = checkpoint["step"] + 1
+    torch.random.set_rng_state(checkpoint["rng_state"].cpu())
+    # print(f"resumed from step {start_step}")
+
+out = model.enc_seq(inputs[~train_mask])
+out = model.decoder(out, inputs[~train_mask][:, list_len])
+test_loss = F.cross_entropy(out, targets[~train_mask])
+test_acc = (out.argmax(-1) == targets[~train_mask]).float().mean()
+
+# print(f"test_loss={test_loss.item():.6g}, test_acc={test_acc.item():.6f}")
+
+
+out_enc = model.enc_seq(inputs[1:2])
+out_logits = model.decoder(out_enc, inputs[1:2][:, list_len])
+print(inputs[1:2])
+print(out_enc)
+print(out_logits, F.softmax(out_logits, dim=-1))
+
+
+# embeddings = model.l1.weight.detach().cpu().numpy()
+# pca = PCA(n_components=3)
+# embeddings_pca = pca.fit_transform(embeddings)
+
+
+# os.makedirs("plots", exist_ok=True)
+
+# timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+# save_path = f"plots/pca-{timestamp}.png"
+
+# plt.figure(figsize=(8, 8))
+# plt.scatter(embeddings_pca[:, 1], embeddings_pca[:, 2], s=100)
+# for i in range(k):
+#     plt.annotate(
+#         str(i),
+#         (embeddings_pca[i, 1], embeddings_pca[i, 2]),
+#         fontsize=12,
+#         ha="center",
+#         va="bottom",
+#     )
+# plt.grid(True, alpha=0.3)
+# plt.tight_layout()
+# plt.savefig(save_path)
+
+
+print(torch.clamp(model.l2.weight, min=0))
