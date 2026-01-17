@@ -164,10 +164,10 @@ for i in range(embeddings.shape[0]):
 ax.set_xlabel("Dim 0")
 ax.set_ylabel("Dim 1")
 ax.set_zlabel("Dim 2")
-ax.set_title("model.l1.weight (Embeddings)")
+# ax.set_title("model.l1.weight (Embeddings)")
 
-# os.makedirs("plots", exist_ok=True)
-# timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-# save_path = f"plots/l1_weight_3d-{timestamp}.png"
-# plt.savefig(save_path)
+os.makedirs("plots", exist_ok=True)
+timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+save_path = f"plots/encodings-3d-{timestamp}.png"
+plt.savefig(save_path)
 plt.show()
