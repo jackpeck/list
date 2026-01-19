@@ -88,15 +88,16 @@ if os.path.exists(checkpoint_path):
 
 
 # Permute l1 embedding weights: reorder rows from 0152346 to 0123456
-perm = [
-    0,
-    1,
-    5,
-    2,
-    3,
-    4,
-    6,
-]  # this is the order the values seems to be encoded in. plotting model.l1.weight shows a straight line in 3d. see plots/l1_weight_3d-20260116-175750.png
+# perm = [
+#     0,
+#     1,
+#     5,
+#     2,
+#     3,
+#     4,
+#     6,
+# ]  # this is the order the values seems to be encoded in. plotting model.l1.weight shows a straight line in 3d. see plots/l1_weight_3d-20260116-175750.png
+perm = [0, 1, 2, 5, 3, 4, 6]
 model.l1.weight.data = model.l1.weight.data[perm]
 model.l3.weight.data = model.l3.weight.data[perm]
 
@@ -142,10 +143,10 @@ print(out_logits, F.softmax(out_logits, dim=-1))
 
 # print(torch.clamp(model.l2.weight, min=0))
 # print(model.l2.weight)
-print(model.l1.weight)
+# print(model.l1.weight)
 
 # # 3D plot of l1 embeddings
-# embeddings = model.l1.weight
+embeddings = model.l1.weight
 
 # embeddings2 = model.l2(embeddings)
 # embeddings3 = model.l2(embeddings2)
@@ -155,15 +156,17 @@ embeddings = model.enc_seq(inputs[:])
 
 state = embeddings
 y = state + model.embed_attribute_index(inputs[:, list_len])
-# z = model.l4(y)
-# z = F.relu(z)
-# z = model.l5(z)
-# y = y + z
-# y = z
+z = model.l4(y)
+z = F.relu(z)
+z = model.l5(z)
+y = y + z
+# # y = z
 embeddings = y
 
 
-mask = inputs[:, list_len] == 0
+# mask = inputs[:, list_len] == 0
+mask = inputs[:, list_len] != 99
+# mask = torch.ones(embeddings.shape[0]).bool()
 
 # print(inputs[27 : 27 + 4])
 # print(inputs[:, list_len][27 : 27 + 4])
@@ -185,50 +188,52 @@ mask = inputs[:, list_len] == 0
 embeddings = embeddings.detach().cpu().numpy()
 mask = mask.cpu().numpy()
 
+print(embeddings.shape)
 
-# fig = plt.figure(figsize=(10, 8))
-# ax = fig.add_subplot(111, projection="3d")
 
-# # embeddings = embeddings[:10]
-# ax.scatter(
-#     embeddings[mask][:, 0],
-#     embeddings[mask][:, 1],
-#     embeddings[mask][:, 2],
-#     s=100,
-#     # c=range(embeddings.shape[0]),
-#     # c=inputs[: embeddings.shape[0], list_len].cpu().numpy(),
-#     # c=targets[mask][: embeddings[mask].shape[0]].cpu().numpy(),
-#     c=targets[mask].cpu().numpy(),
-#     # c=torch.stack(
-#     #     [
-#     #         inputs[: embeddings.shape[0], 0],
-#     #         inputs[: embeddings.shape[0], 1],
-#     #         inputs[: embeddings.shape[0], 2],
-#     #     ],
-#     #     dim=1,
-#     # )
-#     # .float()
-#     # .cpu()
-#     # .numpy()
-#     # / (k - 1),
-#     cmap="viridis",
-# )
+fig = plt.figure(figsize=(10, 8))
+ax = fig.add_subplot(111, projection="3d")
 
-# # for i in range(embeddings.shape[0]):
-# #     # s = str(i)
-# #     s = str(inputs[i].cpu().numpy())
-# #     ax.text(embeddings[i, 0], embeddings[i, 1], embeddings[i, 2], s, fontsize=12)
+# embeddings = embeddings[:10]
+ax.scatter(
+    embeddings[mask][:, 0],
+    embeddings[mask][:, 1],
+    embeddings[mask][:, 2],
+    s=100,
+    # c=range(embeddings.shape[0]),
+    # c=inputs[: embeddings.shape[0], list_len].cpu().numpy(),
+    # c=targets[mask][: embeddings[mask].shape[0]].cpu().numpy(),
+    c=targets[mask].cpu().numpy(),
+    # c=torch.stack(
+    #     [
+    #         inputs[: embeddings.shape[0], 0],
+    #         inputs[: embeddings.shape[0], 1],
+    #         inputs[: embeddings.shape[0], 2],
+    #     ],
+    #     dim=1,
+    # )
+    # .float()
+    # .cpu()
+    # .numpy()
+    # / (k - 1),
+    cmap="viridis",
+)
 
-# ax.set_xlabel("Dim 0")
-# ax.set_ylabel("Dim 1")
-# ax.set_zlabel("Dim 2")
-# # ax.set_title("model.l1.weight (Embeddings)")
+# for i in range(embeddings.shape[0]):
+#     s = str(i)
+#     # s = str(inputs[i].cpu().numpy())
+#     ax.text(embeddings[i, 0], embeddings[i, 1], embeddings[i, 2], s, fontsize=12)
 
-# os.makedirs("plots", exist_ok=True)
-# timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-# save_path = f"plots/encodings-3d-{timestamp}.png"
-# # plt.savefig(save_path)
-# plt.show()
+ax.set_xlabel("Dim 0")
+ax.set_ylabel("Dim 1")
+ax.set_zlabel("Dim 2")
+# ax.set_title("model.l1.weight (Embeddings)")
+
+os.makedirs("plots", exist_ok=True)
+timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+save_path = f"plots/encodings-3d-{timestamp}.png"
+# plt.savefig(save_path)
+plt.show()
 
 
 # # Compute y before and after MLP
@@ -309,78 +314,78 @@ mask = mask.cpu().numpy()
 # print(model.l5.weight)
 
 
-y_before = state + model.embed_attribute_index(inputs[:, list_len])
-z = model.l4(y_before)
-print(z[mask][:10])
-print(z[mask].shape)
+# y_before = state + model.embed_attribute_index(inputs[:, list_len])
+# z = model.l4(y_before)
+# print(z[mask][:10])
+# print(z[mask].shape)
 
-# z[:, 10] = 0
+# # z[:, 10] = 0
 
-z[:, 1] = 0
-z[:, 4] = 0
-z[:, 6] = 0
-z[:, 8] = 0
-# z[:, 10] = z[:, 10] * 10
-# z[:, 2] = 0
-
-
-# plt.plot(z[mask].detach().cpu() > 0)
-# sns.heatmap(z[mask].detach().cpu())
-sns.heatmap(z[mask].detach().cpu())
-# sns.heatmap(
-#     torch.cat([z[mask].detach().cpu(), targets[mask].unsqueeze(-1).cpu() * 10], dim=-1)
-# )
-
-# sns.heatmap(torch.cat([targets[mask].unsqueeze(-1).cpu()], dim=-1))
-# print(
-#     torch.cat([z[mask].detach().cpu(), targets[mask].unsqueeze(-1).cpu()], dim=-1).shape
-# )
-# plt.plot(targets[mask].detach().cpu(), label="targets")
+# z[:, 1] = 0
+# z[:, 4] = 0
+# z[:, 6] = 0
+# z[:, 8] = 0
+# # z[:, 10] = z[:, 10] * 10
+# # z[:, 2] = 0
 
 
-# state = embeddings
-# y = state + model.embed_attribute_index(inputs[:, list_len])
-# z = model.l4(y)
+# # plt.plot(z[mask].detach().cpu() > 0)
+# # sns.heatmap(z[mask].detach().cpu())
+# # sns.heatmap(z[mask].detach().cpu())
+# # sns.heatmap(
+# #     torch.cat([z[mask].detach().cpu(), targets[mask].unsqueeze(-1).cpu() * 10], dim=-1)
+# # )
+
+# # sns.heatmap(torch.cat([targets[mask].unsqueeze(-1).cpu()], dim=-1))
+# # print(
+# #     torch.cat([z[mask].detach().cpu(), targets[mask].unsqueeze(-1).cpu()], dim=-1).shape
+# # )
+# # plt.plot(targets[mask].detach().cpu(), label="targets")
+
+
+# # state = embeddings
+# # y = state + model.embed_attribute_index(inputs[:, list_len])
+# # z = model.l4(y)
+# # z = F.relu(z)
+# z = model.l5(z)
+# y = y_before + z
+# y = model.l3(y)
+# print((y.argmax(-1) == targets)[mask].float().mean())
+
+
+# # plt.legend()
+# # plt.show()
+
+# # print(model.l5.weight @ model.l4.weight)
+# # print(
+# #     model.l5.weight[:, [0, 2, 3, 5, 7, 9, 10, 11]]
+# #     @ model.l4.weight[[0, 2, 3, 5, 7, 9, 10, 11]]
+# # )
+# # # print(model.l5.weight[:, [0, 2, 3, 5, 7, 9, 10, 11]].shape)
+
+
+# # mlp_linear_for_index_0 = (
+# #     model.l5.weight[:, [0, 2, 3, 5, 7, 9, 10, 11]]
+# #     @ model.l4.weight[[0, 2, 3, 5, 7, 9, 10, 11]]
+# # )
+
+# # print((y_before @ mlp_linear_for_index_0).shape)
+
+
+# z = model.l4(y_before)
 # z = F.relu(z)
-z = model.l5(z)
-y = y_before + z
-y = model.l3(y)
-print((y.argmax(-1) == targets)[mask].float().mean())
+# z = model.l5(z)
+# y = y_before + z
+# y = model.l3(y)
+# print((y.argmax(-1) == targets)[mask].float().mean())
 
-
-# plt.legend()
-# plt.show()
-
-# print(model.l5.weight @ model.l4.weight)
-# print(
-#     model.l5.weight[:, [0, 2, 3, 5, 7, 9, 10, 11]]
-#     @ model.l4.weight[[0, 2, 3, 5, 7, 9, 10, 11]]
-# )
-# # print(model.l5.weight[:, [0, 2, 3, 5, 7, 9, 10, 11]].shape)
-
-
-# mlp_linear_for_index_0 = (
-#     model.l5.weight[:, [0, 2, 3, 5, 7, 9, 10, 11]]
-#     @ model.l4.weight[[0, 2, 3, 5, 7, 9, 10, 11]]
-# )
-
-# print((y_before @ mlp_linear_for_index_0).shape)
-
-
-z = model.l4(y_before)
-z = F.relu(z)
-z = model.l5(z)
-y = y_before + z
-y = model.l3(y)
-print((y.argmax(-1) == targets)[mask].float().mean())
-
-print(model.l4.weight.shape, y_before.shape)
-print(model.l4.bias)
-z = model.l4(y_before)
-# z = y_before @ model.l4.weight.T
-z = F.relu(z)
-z = model.l5(z)
-# z = z @ model.l5.weight.T
-y = y_before + z
-y = model.l3(y)
-print((y.argmax(-1) == targets)[mask].float().mean())
+# print(model.l4.weight.shape, y_before.shape)
+# print(model.l4.bias)
+# z = model.l4(y_before)
+# # z = y_before @ model.l4.weight.T
+# z = F.relu(z)
+# z = model.l5(z)
+# # z = z @ model.l5.weight.T
+# y = y_before + z
+# y = model.l3(y)
+# print((y.argmax(-1) == targets)[mask].float().mean())
