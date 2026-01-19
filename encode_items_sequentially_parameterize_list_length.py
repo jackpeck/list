@@ -20,8 +20,8 @@ class Model(nn.Module):
         self.l3 = nn.Linear(dim, k, bias=False)
         self.embed_attribute_index = nn.Embedding(list_len, dim)
 
-        self.l4 = nn.Linear(dim, dim * 10, bias=False)
-        self.l5 = nn.Linear(dim * 10, dim, bias=False)
+        self.l4 = nn.Linear(dim, dim * 4, bias=True)
+        self.l5 = nn.Linear(dim * 4, dim, bias=False)
 
     def encoder(self, item, prior_state):
         x = self.l1(item)
@@ -67,7 +67,8 @@ optimizer = torch.optim.AdamW(
     # model.parameters(), lr=1e-5, weight_decay=1.0, betas=(0.9, 0.95)
     model.parameters(),
     lr=3e-4,
-    weight_decay=0.2,
+    # lr=6e-4,
+    weight_decay=0.04,
     betas=(0.9, 0.95),
 )
 
