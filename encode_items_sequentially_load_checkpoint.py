@@ -31,8 +31,9 @@ class Model(nn.Module):
         self.l3 = nn.Linear(dim, k, bias=False)
         self.embed_attribute_index = nn.Embedding(list_len, dim)
 
-        self.l4 = nn.Linear(dim, dim * 4)
-        self.l5 = nn.Linear(dim * 4, dim)
+        up_mult = 10
+        self.l4 = nn.Linear(dim, dim * up_mult, bias=False)
+        self.l5 = nn.Linear(dim * up_mult, dim, bias=False)
 
     def encoder(self, item, prior_state):
         x = self.l1(item)
@@ -72,7 +73,8 @@ inputs_train = inputs[train_mask]
 targets_train = targets[train_mask]
 
 
-checkpoint_path = "runs/encode_items_sequentially/20260116/175325/step_20000.pt"
+# checkpoint_path = "runs/encode_items_sequentially/20260116/175325/step_20000.pt"
+checkpoint_path = "runs/encode_items_sequentially/20260119/140951/step_120000.pt"
 
 
 if os.path.exists(checkpoint_path):
