@@ -31,8 +31,8 @@ class Model(nn.Module):
         self.l3 = nn.Linear(dim, k, bias=False)
         self.embed_attribute_index = nn.Embedding(list_len, dim)
 
-        up_mult = 10
-        self.l4 = nn.Linear(dim, dim * up_mult, bias=False)
+        up_mult = 4
+        self.l4 = nn.Linear(dim, dim * up_mult, bias=True)
         self.l5 = nn.Linear(dim * up_mult, dim, bias=False)
 
     def encoder(self, item, prior_state):
@@ -74,7 +74,9 @@ targets_train = targets[train_mask]
 
 
 # checkpoint_path = "runs/encode_items_sequentially/20260116/175325/step_20000.pt"
-checkpoint_path = "runs/encode_items_sequentially/20260119/140951/step_120000.pt"
+# checkpoint_path = "runs/encode_items_sequentially/20260119/140951/step_120000.pt"
+# checkpoint_path = "runs/encode_items_sequentially/20260119/152649/step_20000.pt"
+checkpoint_path = "runs/encode_items_sequentially/20260119/153356/step_230000.pt"
 
 
 if os.path.exists(checkpoint_path):
@@ -97,7 +99,8 @@ if os.path.exists(checkpoint_path):
 #     4,
 #     6,
 # ]  # this is the order the values seems to be encoded in. plotting model.l1.weight shows a straight line in 3d. see plots/l1_weight_3d-20260116-175750.png
-perm = [0, 1, 2, 5, 3, 4, 6]
+# perm = [0, 1, 2, 5, 3, 4, 6]
+perm = [1, 0, 5, 2, 3, 4, 6]
 model.l1.weight.data = model.l1.weight.data[perm]
 model.l3.weight.data = model.l3.weight.data[perm]
 
@@ -146,7 +149,7 @@ print(out_logits, F.softmax(out_logits, dim=-1))
 # print(model.l1.weight)
 
 # # 3D plot of l1 embeddings
-embeddings = model.l1.weight
+# embeddings = model.l1.weight
 
 # embeddings2 = model.l2(embeddings)
 # embeddings3 = model.l2(embeddings2)
@@ -165,8 +168,8 @@ embeddings = y
 
 
 # mask = inputs[:, list_len] == 0
-mask = inputs[:, list_len] != 99
-# mask = torch.ones(embeddings.shape[0]).bool()
+# mask = inputs[:, list_len] != 99
+mask = torch.ones(embeddings.shape[0]).bool()
 
 # print(inputs[27 : 27 + 4])
 # print(inputs[:, list_len][27 : 27 + 4])
