@@ -341,10 +341,44 @@ sns.heatmap(z[mask].detach().cpu())
 # z = model.l4(y)
 # z = F.relu(z)
 z = model.l5(z)
-y = y + z
+y = y_before + z
 y = model.l3(y)
 print((y.argmax(-1) == targets)[mask].float().mean())
 
 
-plt.legend()
-plt.show()
+# plt.legend()
+# plt.show()
+
+# print(model.l5.weight @ model.l4.weight)
+# print(
+#     model.l5.weight[:, [0, 2, 3, 5, 7, 9, 10, 11]]
+#     @ model.l4.weight[[0, 2, 3, 5, 7, 9, 10, 11]]
+# )
+# # print(model.l5.weight[:, [0, 2, 3, 5, 7, 9, 10, 11]].shape)
+
+
+# mlp_linear_for_index_0 = (
+#     model.l5.weight[:, [0, 2, 3, 5, 7, 9, 10, 11]]
+#     @ model.l4.weight[[0, 2, 3, 5, 7, 9, 10, 11]]
+# )
+
+# print((y_before @ mlp_linear_for_index_0).shape)
+
+
+z = model.l4(y_before)
+z = F.relu(z)
+z = model.l5(z)
+y = y_before + z
+y = model.l3(y)
+print((y.argmax(-1) == targets)[mask].float().mean())
+
+print(model.l4.weight.shape, y_before.shape)
+print(model.l4.bias)
+z = model.l4(y_before)
+# z = y_before @ model.l4.weight.T
+z = F.relu(z)
+z = model.l5(z)
+# z = z @ model.l5.weight.T
+y = y_before + z
+y = model.l3(y)
+print((y.argmax(-1) == targets)[mask].float().mean())
