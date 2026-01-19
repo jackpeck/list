@@ -1,7 +1,10 @@
 import os
 from datetime import datetime
 
+import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
+import numpy as np
+import seaborn as sns
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -157,10 +160,13 @@ y = state + model.embed_attribute_index(inputs[:, list_len])
 # y = z
 embeddings = y
 
-print(inputs[27 : 27 + 4])
-print(inputs[:, list_len][27 : 27 + 4])
-print(targets[27 : 27 + 4])
-print(embeddings[27 : 27 + 4])
+
+mask = inputs[:, list_len] == 0
+
+# print(inputs[27 : 27 + 4])
+# print(inputs[:, list_len][27 : 27 + 4])
+# print(targets[27 : 27 + 4])
+# print(embeddings[27 : 27 + 4])
 # exit()
 
 # embeddings = embeddings[:10]
@@ -175,48 +181,170 @@ print(embeddings[27 : 27 + 4])
 
 
 embeddings = embeddings.detach().cpu().numpy()
+mask = mask.cpu().numpy()
 
 
-fig = plt.figure(figsize=(10, 8))
-ax = fig.add_subplot(111, projection="3d")
+# fig = plt.figure(figsize=(10, 8))
+# ax = fig.add_subplot(111, projection="3d")
 
-# embeddings = embeddings[:10]
+# # embeddings = embeddings[:10]
+# ax.scatter(
+#     embeddings[mask][:, 0],
+#     embeddings[mask][:, 1],
+#     embeddings[mask][:, 2],
+#     s=100,
+#     # c=range(embeddings.shape[0]),
+#     # c=inputs[: embeddings.shape[0], list_len].cpu().numpy(),
+#     # c=targets[mask][: embeddings[mask].shape[0]].cpu().numpy(),
+#     c=targets[mask].cpu().numpy(),
+#     # c=torch.stack(
+#     #     [
+#     #         inputs[: embeddings.shape[0], 0],
+#     #         inputs[: embeddings.shape[0], 1],
+#     #         inputs[: embeddings.shape[0], 2],
+#     #     ],
+#     #     dim=1,
+#     # )
+#     # .float()
+#     # .cpu()
+#     # .numpy()
+#     # / (k - 1),
+#     cmap="viridis",
+# )
 
-ax.scatter(
-    embeddings[:, 0],
-    embeddings[:, 1],
-    embeddings[:, 2],
-    s=100,
-    # c=range(embeddings.shape[0]),
-    # c=inputs[: embeddings.shape[0], list_len].cpu().numpy(),
-    # c=targets[: embeddings.shape[0]].cpu().numpy(),
-    c=torch.stack(
-        [
-            inputs[: embeddings.shape[0], 0],
-            inputs[: embeddings.shape[0], 1],
-            inputs[: embeddings.shape[0], 2],
-        ],
-        dim=1,
-    )
-    .float()
-    .cpu()
-    .numpy()
-    / (k - 1),
-    cmap="viridis",
-)
+# # for i in range(embeddings.shape[0]):
+# #     # s = str(i)
+# #     s = str(inputs[i].cpu().numpy())
+# #     ax.text(embeddings[i, 0], embeddings[i, 1], embeddings[i, 2], s, fontsize=12)
 
-# for i in range(embeddings.shape[0]):
-#     # s = str(i)
-#     s = str(inputs[i].cpu().numpy())
-#     ax.text(embeddings[i, 0], embeddings[i, 1], embeddings[i, 2], s, fontsize=12)
+# ax.set_xlabel("Dim 0")
+# ax.set_ylabel("Dim 1")
+# ax.set_zlabel("Dim 2")
+# # ax.set_title("model.l1.weight (Embeddings)")
 
-ax.set_xlabel("Dim 0")
-ax.set_ylabel("Dim 1")
-ax.set_zlabel("Dim 2")
-# ax.set_title("model.l1.weight (Embeddings)")
+# os.makedirs("plots", exist_ok=True)
+# timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+# save_path = f"plots/encodings-3d-{timestamp}.png"
+# # plt.savefig(save_path)
+# plt.show()
 
-os.makedirs("plots", exist_ok=True)
-timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-save_path = f"plots/encodings-3d-{timestamp}.png"
-plt.savefig(save_path)
+
+# # Compute y before and after MLP
+# y_before = state + model.embed_attribute_index(inputs[:, list_len])
+# z = model.l4(y_before)
+# z = F.relu(z)
+# z = model.l5(z)
+# y_after = y_before + z
+
+# y_before_np = y_before.detach().cpu().numpy()
+# y_after_np = y_after.detach().cpu().numpy()
+
+# y_before_np = y_before_np[mask]
+# y_after_np = y_after_np[mask] / 50
+
+# # Plot lines showing transformation
+# fig = plt.figure(figsize=(10, 8))
+# ax = fig.add_subplot(111, projection="3d")
+
+
+# targets_sub = targets[mask].cpu().numpy()
+# norm = mcolors.Normalize(vmin=min(targets_sub), vmax=max(targets_sub))
+# cmap = plt.get_cmap("viridis")
+
+# # Draw lines from before to after for each point
+# for i in range(y_before_np.shape[0]):
+#     ax.plot(
+#         [y_before_np[i, 0], y_after_np[i, 0]],
+#         [y_before_np[i, 1], y_after_np[i, 1]],
+#         [y_before_np[i, 2], y_after_np[i, 2]],
+#         # c="gray",
+#         c=cmap(norm(targets_sub[i])),
+#         alpha=0.3,
+#         linewidth=0.5,
+#     )
+
+# # Scatter before points
+# ax.scatter(
+#     y_before_np[:, 0],
+#     y_before_np[:, 1],
+#     y_before_np[:, 2],
+#     s=30,
+#     # c="blue",
+#     c=targets[mask].cpu().numpy(),
+#     alpha=0.6,
+#     label="before MLP",
+# )
+
+# # Scatter after points
+# ax.scatter(
+#     y_after_np[:, 0],
+#     y_after_np[:, 1],
+#     y_after_np[:, 2],
+#     s=30,
+#     # c="red",
+#     c=targets[mask].cpu().numpy(),
+#     alpha=0.6,
+#     label="after MLP",
+# )
+
+# ax.set_xlabel("Dim 0")
+# ax.set_ylabel("Dim 1")
+# ax.set_zlabel("Dim 2")
+# ax.legend()
+
+# # make aspect ratio the same
+# all_points = np.vstack([y_before_np[:, :3], y_after_np[:, :3]])
+# max_range = np.ptp(all_points, axis=0).max() / 2
+# mid = all_points.mean(axis=0)
+# ax.set_xlim(mid[0] - max_range, mid[0] + max_range)
+# ax.set_ylim(mid[1] - max_range, mid[1] + max_range)
+# ax.set_zlim(mid[2] - max_range, mid[2] + max_range)
+
+# plt.show()
+
+
+# print("l4", model.l4.weight)
+# print(model.l5.weight)
+
+
+y_before = state + model.embed_attribute_index(inputs[:, list_len])
+z = model.l4(y_before)
+print(z[mask][:10])
+print(z[mask].shape)
+
+# z[:, 10] = 0
+
+z[:, 1] = 0
+z[:, 4] = 0
+z[:, 6] = 0
+z[:, 8] = 0
+# z[:, 10] = z[:, 10] * 10
+# z[:, 2] = 0
+
+
+# plt.plot(z[mask].detach().cpu() > 0)
+# sns.heatmap(z[mask].detach().cpu())
+sns.heatmap(z[mask].detach().cpu())
+# sns.heatmap(
+#     torch.cat([z[mask].detach().cpu(), targets[mask].unsqueeze(-1).cpu() * 10], dim=-1)
+# )
+
+# sns.heatmap(torch.cat([targets[mask].unsqueeze(-1).cpu()], dim=-1))
+# print(
+#     torch.cat([z[mask].detach().cpu(), targets[mask].unsqueeze(-1).cpu()], dim=-1).shape
+# )
+# plt.plot(targets[mask].detach().cpu(), label="targets")
+
+
+# state = embeddings
+# y = state + model.embed_attribute_index(inputs[:, list_len])
+# z = model.l4(y)
+# z = F.relu(z)
+z = model.l5(z)
+y = y + z
+y = model.l3(y)
+print((y.argmax(-1) == targets)[mask].float().mean())
+
+
+plt.legend()
 plt.show()
