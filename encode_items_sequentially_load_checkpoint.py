@@ -156,17 +156,25 @@ embeddings = model.enc_seq(inputs[:])
 
 state = embeddings
 y = state + model.embed_attribute_index(inputs[:, list_len])
-z = model.l4(y)
-z = F.relu(z)
-z = model.l5(z)
-y = y + z
-# # y = z
+# z = model.l4(y)
+# z = F.relu(z)
+# z = model.l5(z)
+# y = y + z
+# y = z
 embeddings = y
 
 
-mask = inputs[:, list_len] == 0
-# mask = inputs[:, list_len] != 99
+mask = inputs[:, list_len] == 2
+# mask = inputs[:, list_len] == 2
 # mask = torch.ones(embeddings.shape[0]).bool()
+# mask = torch.rand(embeddings.shape[0]) < 0.03
+# mask[25:] = False
+# mask = (inputs[:, :3] == 0).any(dim=-1) & (
+#     (inputs[:, :3] == 0)
+#     | (inputs[:, :3] == 2)
+#     | (inputs[:, :3] == 6)
+#     | (inputs[:, :3] == 4)
+# ).all(dim=-1)
 
 # print(inputs[27 : 27 + 4])
 # print(inputs[:, list_len][27 : 27 + 4])
@@ -190,7 +198,7 @@ mask = mask.cpu().numpy()
 
 print(embeddings.shape)
 
-
+plt.rcParams["savefig.dpi"] = 300
 # fig = plt.figure(figsize=(10, 8))
 # ax = fig.add_subplot(111, projection="3d")
 
@@ -200,29 +208,38 @@ print(embeddings.shape)
 #     embeddings[mask][:, 1],
 #     embeddings[mask][:, 2],
 #     s=100,
-#     # c=range(embeddings.shape[0]),
+#     # c=range(embeddings[mask].shape[0]),
 #     # c=inputs[: embeddings.shape[0], list_len].cpu().numpy(),
 #     # c=targets[mask][: embeddings[mask].shape[0]].cpu().numpy(),
-#     c=targets[mask].cpu().numpy(),
-#     # c=torch.stack(
-#     #     [
-#     #         inputs[: embeddings.shape[0], 0],
-#     #         inputs[: embeddings.shape[0], 1],
-#     #         inputs[: embeddings.shape[0], 2],
-#     #     ],
-#     #     dim=1,
-#     # )
-#     # .float()
-#     # .cpu()
-#     # .numpy()
-#     # / (k - 1),
+#     # c=targets[mask].cpu().numpy(),
+#     # alpha=1,
+#     # depthshade=False,
+#     c=torch.stack(
+#         [
+#             inputs[: embeddings[mask].shape[0], 0],
+#             inputs[: embeddings[mask].shape[0], 1],
+#             inputs[: embeddings[mask].shape[0], 2],
+#         ],
+#         dim=1,
+#     )
+#     .float()
+#     .cpu()
+#     .numpy()
+#     / (k - 1),
 #     cmap="viridis",
 # )
 
-# # for i in range(embeddings.shape[0]):
-# #     s = str(i)
+# # for i in range(embeddings[mask].shape[0]):
+# #     # s = str(i)
 # #     # s = str(inputs[i].cpu().numpy())
-# #     ax.text(embeddings[i, 0], embeddings[i, 1], embeddings[i, 2], s, fontsize=12)
+# #     s = str(inputs[i, :3].cpu().numpy())
+# #     ax.text(
+# #         embeddings[mask][i, 0],
+# #         embeddings[mask][i, 1],
+# #         embeddings[mask][i, 2],
+# #         s,
+# #         fontsize=12,
+# #     )
 
 # ax.set_xlabel("Dim 0")
 # ax.set_ylabel("Dim 1")
@@ -322,8 +339,8 @@ y_before = state + model.embed_attribute_index(inputs[:, list_len])
 z = y_before @ model.l4.weight.T + model.l4.bias
 
 
-for i in [0, 1, 4, 6, 8]:
-    z[:, i] = 0
+# for i in [0, 1, 4, 6, 8, 10]:
+#     z[:, i] = 0
 # z[:, 10] = 0
 
 # z[:, 1] = 0
@@ -335,7 +352,8 @@ for i in [0, 1, 4, 6, 8]:
 
 
 # plt.plot(z[mask].detach().cpu() > 0)
-sns.heatmap(z[mask].detach().cpu())
+# sns.heatmap(z[mask].detach().cpu() > 0)
+# plt.show()
 # sns.heatmap(z[mask].detach().cpu())
 # sns.heatmap(
 #     torch.cat([z[mask].detach().cpu(), targets[mask].unsqueeze(-1).cpu() * 10], dim=-1)
@@ -357,7 +375,9 @@ sns.heatmap(z[mask].detach().cpu())
 live_indices_mask = torch.ones(
     model.l4.weight.size(0), dtype=torch.bool, device=model.l4.weight.device
 )
-live_indices_mask[[0, 1, 4, 6, 8]] = False
+# live_indices_mask[[0, 1, 4, 6, 8]] = False # idx=0
+# live_indices_mask[[0, 1, 4, 10]] = False  # idx=1
+live_indices_mask[[6, 8, 10]] = False  # idx=1
 
 l4_linear_for_group_0 = model.l4.weight[live_indices_mask]
 l5_linear_for_group_0 = model.l5.weight[:, live_indices_mask]
@@ -389,52 +409,60 @@ z = y_before @ l5_l4_combined_w + l5_l4_combined_bias
 y = z
 
 print(l5_l4_combined_w)
-# exit()
-
-
-svd = torch.linalg.svd(l5_l4_combined_w.cpu())
-
-eig = torch.linalg.eig(l5_l4_combined_w.cpu())
-
-assert (eig.eigenvectors.imag == 0).all()
-assert (eig.eigenvalues.imag == 0).all()
-
-print(eig)
-
-print(
-    eig.eigenvectors.real
-    @ torch.diag(eig.eigenvalues.real)
-    @ eig.eigenvectors.real.inverse()
-)
-
-# print(svd.U @ torch.diag(svd.S) @ svd.Vh)
-
-# svd.S[0] = 0
-
-
-eig.eigenvalues[0] = 0
-
-# z = y_before @ svd.U @ torch.diag(svd.S) @ svd.Vh + l5_l4_combined_bias
-z = (
-    y_before
-    @ eig.eigenvectors.real
-    @ torch.diag(eig.eigenvalues.real)
-    @ eig.eigenvectors.real.inverse()
-    + l5_l4_combined_bias
-)
-y = z
 
 embeddings = y
 
-# # state = embeddings
-# # y = state + model.embed_attribute_index(inputs[:, list_len])
-# # z = model.l4(y)
-# z = F.relu(z)
-# z = model.l5(z)
-# z = z @ model.l5.weight.T
-# y = y_before + z
 y = model.l3(y)
 print((y.argmax(-1) == targets)[mask].float().mean())
+
+
+# print(l5_l4_combined_w)
+# # exit()
+
+
+# svd = torch.linalg.svd(l5_l4_combined_w.cpu())
+
+# eig = torch.linalg.eig(l5_l4_combined_w.cpu())
+
+# assert (eig.eigenvectors.imag == 0).all()
+# assert (eig.eigenvalues.imag == 0).all()
+
+# print(eig)
+
+# print(
+#     eig.eigenvectors.real
+#     @ torch.diag(eig.eigenvalues.real)
+#     @ eig.eigenvectors.real.inverse()
+# )
+
+# # print(svd.U @ torch.diag(svd.S) @ svd.Vh)
+
+# # svd.S[0] = 0
+
+
+# eig.eigenvalues[0] = 0
+
+# # z = y_before @ svd.U @ torch.diag(svd.S) @ svd.Vh + l5_l4_combined_bias
+# z = (
+#     y_before
+#     @ eig.eigenvectors.real
+#     @ torch.diag(eig.eigenvalues.real)
+#     @ eig.eigenvectors.real.inverse()
+#     + l5_l4_combined_bias
+# )
+# y = z
+
+# embeddings = y
+
+# # # state = embeddings
+# # # y = state + model.embed_attribute_index(inputs[:, list_len])
+# # # z = model.l4(y)
+# # z = F.relu(z)
+# # z = model.l5(z)
+# # z = z @ model.l5.weight.T
+# # y = y_before + z
+# y = model.l3(y)
+# print((y.argmax(-1) == targets)[mask].float().mean())
 
 
 embeddings = embeddings.detach().cpu()
