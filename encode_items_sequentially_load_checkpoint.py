@@ -10,15 +10,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 from sklearn.decomposition import PCA
 
-device = torch.device("mps")
-
-
 k = 7
 list_len = 3
 
 torch.manual_seed(0)
 
-device = torch.device("mps")
+device = torch.device("cpu")
 
 
 class Model(nn.Module):
@@ -167,9 +164,9 @@ y = y + z
 embeddings = y
 
 
-# mask = inputs[:, list_len] == 0
+mask = inputs[:, list_len] == 0
 # mask = inputs[:, list_len] != 99
-mask = torch.ones(embeddings.shape[0]).bool()
+# mask = torch.ones(embeddings.shape[0]).bool()
 
 # print(inputs[27 : 27 + 4])
 # print(inputs[:, list_len][27 : 27 + 4])
@@ -194,49 +191,49 @@ mask = mask.cpu().numpy()
 print(embeddings.shape)
 
 
-fig = plt.figure(figsize=(10, 8))
-ax = fig.add_subplot(111, projection="3d")
+# fig = plt.figure(figsize=(10, 8))
+# ax = fig.add_subplot(111, projection="3d")
 
-# embeddings = embeddings[:10]
-ax.scatter(
-    embeddings[mask][:, 0],
-    embeddings[mask][:, 1],
-    embeddings[mask][:, 2],
-    s=100,
-    # c=range(embeddings.shape[0]),
-    # c=inputs[: embeddings.shape[0], list_len].cpu().numpy(),
-    # c=targets[mask][: embeddings[mask].shape[0]].cpu().numpy(),
-    c=targets[mask].cpu().numpy(),
-    # c=torch.stack(
-    #     [
-    #         inputs[: embeddings.shape[0], 0],
-    #         inputs[: embeddings.shape[0], 1],
-    #         inputs[: embeddings.shape[0], 2],
-    #     ],
-    #     dim=1,
-    # )
-    # .float()
-    # .cpu()
-    # .numpy()
-    # / (k - 1),
-    cmap="viridis",
-)
+# # embeddings = embeddings[:10]
+# ax.scatter(
+#     embeddings[mask][:, 0],
+#     embeddings[mask][:, 1],
+#     embeddings[mask][:, 2],
+#     s=100,
+#     # c=range(embeddings.shape[0]),
+#     # c=inputs[: embeddings.shape[0], list_len].cpu().numpy(),
+#     # c=targets[mask][: embeddings[mask].shape[0]].cpu().numpy(),
+#     c=targets[mask].cpu().numpy(),
+#     # c=torch.stack(
+#     #     [
+#     #         inputs[: embeddings.shape[0], 0],
+#     #         inputs[: embeddings.shape[0], 1],
+#     #         inputs[: embeddings.shape[0], 2],
+#     #     ],
+#     #     dim=1,
+#     # )
+#     # .float()
+#     # .cpu()
+#     # .numpy()
+#     # / (k - 1),
+#     cmap="viridis",
+# )
 
-# for i in range(embeddings.shape[0]):
-#     s = str(i)
-#     # s = str(inputs[i].cpu().numpy())
-#     ax.text(embeddings[i, 0], embeddings[i, 1], embeddings[i, 2], s, fontsize=12)
+# # for i in range(embeddings.shape[0]):
+# #     s = str(i)
+# #     # s = str(inputs[i].cpu().numpy())
+# #     ax.text(embeddings[i, 0], embeddings[i, 1], embeddings[i, 2], s, fontsize=12)
 
-ax.set_xlabel("Dim 0")
-ax.set_ylabel("Dim 1")
-ax.set_zlabel("Dim 2")
-# ax.set_title("model.l1.weight (Embeddings)")
+# ax.set_xlabel("Dim 0")
+# ax.set_ylabel("Dim 1")
+# ax.set_zlabel("Dim 2")
+# # ax.set_title("model.l1.weight (Embeddings)")
 
-os.makedirs("plots", exist_ok=True)
-timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-save_path = f"plots/encodings-3d-{timestamp}.png"
-# plt.savefig(save_path)
-plt.show()
+# os.makedirs("plots", exist_ok=True)
+# timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+# save_path = f"plots/encodings-3d-{timestamp}.png"
+# # plt.savefig(save_path)
+# plt.show()
 
 
 # # Compute y before and after MLP
@@ -317,47 +314,170 @@ plt.show()
 # print(model.l5.weight)
 
 
-# y_before = state + model.embed_attribute_index(inputs[:, list_len])
+y_before = state + model.embed_attribute_index(inputs[:, list_len])
 # z = model.l4(y_before)
+# print(model.l4.weight.shape, y_before.shape)
 # print(z[mask][:10])
 # print(z[mask].shape)
+z = y_before @ model.l4.weight.T + model.l4.bias
 
-# # z[:, 10] = 0
+
+for i in [0, 1, 4, 6, 8]:
+    z[:, i] = 0
+# z[:, 10] = 0
 
 # z[:, 1] = 0
 # z[:, 4] = 0
 # z[:, 6] = 0
 # z[:, 8] = 0
-# # z[:, 10] = z[:, 10] * 10
-# # z[:, 2] = 0
+# z[:, 10] = z[:, 10] * 10
+# z[:, 2] = 0
 
 
-# # plt.plot(z[mask].detach().cpu() > 0)
-# # sns.heatmap(z[mask].detach().cpu())
-# # sns.heatmap(z[mask].detach().cpu())
-# # sns.heatmap(
-# #     torch.cat([z[mask].detach().cpu(), targets[mask].unsqueeze(-1).cpu() * 10], dim=-1)
-# # )
+# plt.plot(z[mask].detach().cpu() > 0)
+sns.heatmap(z[mask].detach().cpu())
+# sns.heatmap(z[mask].detach().cpu())
+# sns.heatmap(
+#     torch.cat([z[mask].detach().cpu(), targets[mask].unsqueeze(-1).cpu() * 10], dim=-1)
+# )
 
-# # sns.heatmap(torch.cat([targets[mask].unsqueeze(-1).cpu()], dim=-1))
-# # print(
-# #     torch.cat([z[mask].detach().cpu(), targets[mask].unsqueeze(-1).cpu()], dim=-1).shape
-# # )
-# # plt.plot(targets[mask].detach().cpu(), label="targets")
+# sns.heatmap(torch.cat([targets[mask].unsqueeze(-1).cpu()], dim=-1))
+# print(
+#     torch.cat([z[mask].detach().cpu(), targets[mask].unsqueeze(-1).cpu()], dim=-1).shape
+# )
+# plt.plot(targets[mask].detach().cpu(), label="targets")
 
+
+# z = y_before @ model.l4.weight.T + model.l4.bias
+# for i in [0, 1, 4, 6, 8]:
+#     z[:, i] = 0
+# z = z @ model.l5.weight.T
+# y = y_before + z
+
+live_indices_mask = torch.ones(
+    model.l4.weight.size(0), dtype=torch.bool, device=model.l4.weight.device
+)
+live_indices_mask[[0, 1, 4, 6, 8]] = False
+
+l4_linear_for_group_0 = model.l4.weight[live_indices_mask]
+l5_linear_for_group_0 = model.l5.weight[:, live_indices_mask]
+print(l4_linear_for_group_0.shape, l5_linear_for_group_0.shape)
+
+
+# z = y_before @ l4_linear_for_group_0.T + model.l4.bias[live_indices_mask]
+# z = z @ l5_linear_for_group_0.T
+# y = y_before + z
+
+# z = (
+#     y_before @ l4_linear_for_group_0.T + model.l4.bias[live_indices_mask]
+# ) @ l5_linear_for_group_0.T
+# y = y_before + z
+
+
+# z = (
+#     y_before @ (l4_linear_for_group_0.T @ l5_linear_for_group_0.T)
+#     + model.l4.bias[live_indices_mask] @ l5_linear_for_group_0.T
+# )
+# y = y_before + z
+
+l5_l4_combined_w = l4_linear_for_group_0.T @ l5_linear_for_group_0.T + torch.eye(
+    3, device=device
+)
+l5_l4_combined_bias = model.l4.bias[live_indices_mask] @ l5_linear_for_group_0.T
+
+z = y_before @ l5_l4_combined_w + l5_l4_combined_bias
+y = z
+
+print(l5_l4_combined_w)
+# exit()
+
+
+svd = torch.linalg.svd(l5_l4_combined_w.cpu())
+
+eig = torch.linalg.eig(l5_l4_combined_w.cpu())
+
+assert (eig.eigenvectors.imag == 0).all()
+assert (eig.eigenvalues.imag == 0).all()
+
+print(eig)
+
+print(
+    eig.eigenvectors.real
+    @ torch.diag(eig.eigenvalues.real)
+    @ eig.eigenvectors.real.inverse()
+)
+
+# print(svd.U @ torch.diag(svd.S) @ svd.Vh)
+
+# svd.S[0] = 0
+
+
+eig.eigenvalues[0] = 0
+
+# z = y_before @ svd.U @ torch.diag(svd.S) @ svd.Vh + l5_l4_combined_bias
+z = (
+    y_before
+    @ eig.eigenvectors.real
+    @ torch.diag(eig.eigenvalues.real)
+    @ eig.eigenvectors.real.inverse()
+    + l5_l4_combined_bias
+)
+y = z
+
+embeddings = y
 
 # # state = embeddings
 # # y = state + model.embed_attribute_index(inputs[:, list_len])
 # # z = model.l4(y)
-# # z = F.relu(z)
+# z = F.relu(z)
 # z = model.l5(z)
+# z = z @ model.l5.weight.T
 # y = y_before + z
-# y = model.l3(y)
-# print((y.argmax(-1) == targets)[mask].float().mean())
+y = model.l3(y)
+print((y.argmax(-1) == targets)[mask].float().mean())
 
 
-# # plt.legend()
-# # plt.show()
+embeddings = embeddings.detach().cpu()
+fig = plt.figure(figsize=(10, 8))
+ax = fig.add_subplot(111, projection="3d")
+
+# embeddings = embeddings[:10]
+ax.scatter(
+    embeddings[mask][:, 0],
+    embeddings[mask][:, 1],
+    embeddings[mask][:, 2],
+    s=100,
+    # c=range(embeddings.shape[0]),
+    # c=inputs[: embeddings.shape[0], list_len].cpu().numpy(),
+    # c=targets[mask][: embeddings[mask].shape[0]].cpu().numpy(),
+    c=targets[mask].cpu().numpy(),
+    # c=torch.stack(
+    #     [
+    #         inputs[: embeddings.shape[0], 0],
+    #         inputs[: embeddings.shape[0], 1],
+    #         inputs[: embeddings.shape[0], 2],
+    #     ],
+    #     dim=1,
+    # )
+    # .float()
+    # .cpu()
+    # .numpy()
+    # / (k - 1),
+    cmap="viridis",
+)
+ax.set_xlabel("Dim 0")
+ax.set_ylabel("Dim 1")
+ax.set_zlabel("Dim 2")
+plt.show()
+
+
+# plt.legend()
+# plt.show()
+
+# print(model.l4.bias)
+# print(model.l4.weight.shape)
+# print(model.l4.weight.inverse())
+
 
 # # print(model.l5.weight @ model.l4.weight)
 # # print(
