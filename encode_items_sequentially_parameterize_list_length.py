@@ -11,7 +11,7 @@ device = torch.device("mps")
 
 
 class Model(nn.Module):
-    def __init__(self, dim=3):
+    def __init__(self, dim=4):
         super().__init__()
         self.dim = dim
 

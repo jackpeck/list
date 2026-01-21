@@ -19,7 +19,7 @@ device = torch.device("cpu")
 
 
 class Model(nn.Module):
-    def __init__(self, dim=3):
+    def __init__(self, dim=4):
         super().__init__()
         self.dim = dim
 
@@ -73,7 +73,8 @@ targets_train = targets[train_mask]
 # checkpoint_path = "runs/encode_items_sequentially/20260116/175325/step_20000.pt"
 # checkpoint_path = "runs/encode_items_sequentially/20260119/140951/step_120000.pt"
 # checkpoint_path = "runs/encode_items_sequentially/20260119/152649/step_20000.pt"
-checkpoint_path = "runs/encode_items_sequentially/20260119/153356/step_230000.pt"
+# checkpoint_path = "runs/encode_items_sequentially/20260119/153356/step_230000.pt"
+checkpoint_path = "runs/encode_items_sequentially/20260120/152610/step_10000.pt"
 
 
 if os.path.exists(checkpoint_path):
@@ -160,13 +161,12 @@ y = state + model.embed_attribute_index(inputs[:, list_len])
 # z = F.relu(z)
 # z = model.l5(z)
 # y = y + z
-# y = z
 embeddings = y
 
 
-mask = inputs[:, list_len] == 2
 # mask = inputs[:, list_len] == 2
-# mask = torch.ones(embeddings.shape[0]).bool()
+# mask = inputs[:, list_len] == 2
+mask = torch.ones(embeddings.shape[0]).bool()
 # mask = torch.rand(embeddings.shape[0]) < 0.03
 # mask[25:] = False
 # mask = (inputs[:, :3] == 0).any(dim=-1) & (
@@ -199,58 +199,58 @@ mask = mask.cpu().numpy()
 print(embeddings.shape)
 
 plt.rcParams["savefig.dpi"] = 300
-# fig = plt.figure(figsize=(10, 8))
-# ax = fig.add_subplot(111, projection="3d")
+fig = plt.figure(figsize=(10, 8))
+ax = fig.add_subplot(111, projection="3d")
 
-# # embeddings = embeddings[:10]
-# ax.scatter(
-#     embeddings[mask][:, 0],
-#     embeddings[mask][:, 1],
-#     embeddings[mask][:, 2],
-#     s=100,
-#     # c=range(embeddings[mask].shape[0]),
-#     # c=inputs[: embeddings.shape[0], list_len].cpu().numpy(),
-#     # c=targets[mask][: embeddings[mask].shape[0]].cpu().numpy(),
-#     # c=targets[mask].cpu().numpy(),
-#     # alpha=1,
-#     # depthshade=False,
-#     c=torch.stack(
-#         [
-#             inputs[: embeddings[mask].shape[0], 0],
-#             inputs[: embeddings[mask].shape[0], 1],
-#             inputs[: embeddings[mask].shape[0], 2],
-#         ],
-#         dim=1,
+# embeddings = embeddings[:10]
+ax.scatter(
+    embeddings[mask][:, 0],
+    embeddings[mask][:, 1],
+    embeddings[mask][:, 2],
+    s=100,
+    # c=range(embeddings[mask].shape[0]),
+    # c=inputs[: embeddings.shape[0], list_len].cpu().numpy(),
+    c=targets[mask].cpu().numpy(),
+    # alpha=1,
+    # depthshade=False,
+    # c=torch.stack(
+    #     [
+    #         inputs[: embeddings[mask].shape[0], 0],
+    #         inputs[: embeddings[mask].shape[0], 1],
+    #         inputs[: embeddings[mask].shape[0], 2],
+    #     ],
+    #     dim=1,
+    # )
+    # .float()
+    # .cpu()
+    # .numpy()
+    # / (k - 1),
+    cmap="viridis",
+)
+
+# for i in range(embeddings[mask].shape[0]):
+#     # s = str(i)
+#     # s = str(inputs[i].cpu().numpy())
+#     s = str(inputs[i, :3].cpu().numpy())
+#     ax.text(
+#         embeddings[mask][i, 0],
+#         embeddings[mask][i, 1],
+#         embeddings[mask][i, 2],
+#         s,
+#         fontsize=12,
 #     )
-#     .float()
-#     .cpu()
-#     .numpy()
-#     / (k - 1),
-#     cmap="viridis",
-# )
 
-# # for i in range(embeddings[mask].shape[0]):
-# #     # s = str(i)
-# #     # s = str(inputs[i].cpu().numpy())
-# #     s = str(inputs[i, :3].cpu().numpy())
-# #     ax.text(
-# #         embeddings[mask][i, 0],
-# #         embeddings[mask][i, 1],
-# #         embeddings[mask][i, 2],
-# #         s,
-# #         fontsize=12,
-# #     )
+ax.set_xlabel("Dim 0")
+ax.set_ylabel("Dim 1")
+ax.set_zlabel("Dim 2")
+# ax.set_title("model.l1.weight (Embeddings)")
 
-# ax.set_xlabel("Dim 0")
-# ax.set_ylabel("Dim 1")
-# ax.set_zlabel("Dim 2")
-# # ax.set_title("model.l1.weight (Embeddings)")
-
-# os.makedirs("plots", exist_ok=True)
-# timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-# save_path = f"plots/encodings-3d-{timestamp}.png"
-# # plt.savefig(save_path)
-# plt.show()
+os.makedirs("plots", exist_ok=True)
+timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+save_path = f"plots/encodings-3d-{timestamp}.png"
+# plt.savefig(save_path)
+plt.show()
+exit()
 
 
 # # Compute y before and after MLP
