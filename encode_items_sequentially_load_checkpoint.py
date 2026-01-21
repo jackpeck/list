@@ -157,10 +157,10 @@ embeddings = model.enc_seq(inputs[:])
 
 state = embeddings
 y = state + model.embed_attribute_index(inputs[:, list_len])
-# z = model.l4(y)
-# z = F.relu(z)
-# z = model.l5(z)
-# y = y + z
+z = model.l4(y)
+z = F.relu(z)
+z = model.l5(z)
+y = y + z
 embeddings = y
 
 
@@ -197,6 +197,76 @@ embeddings = embeddings.detach().cpu().numpy()
 mask = mask.cpu().numpy()
 
 print(embeddings.shape)
+
+
+# __
+
+
+pca = PCA(n_components=3)
+enc_3d = pca.fit_transform(embeddings)
+
+print(f"PCA explained variance ratio: {pca.explained_variance_ratio_}")
+print(f"Total variance explained: {pca.explained_variance_ratio_.sum():.4f}")
+
+# enc_3d = enc_3d[:, 0:]
+
+# 3D scatter plot
+fig = plt.figure(figsize=(12, 5))
+
+ax1 = fig.add_subplot(121, projection="3d")
+ax1.scatter(
+    enc_3d[:, 0],
+    enc_3d[:, 1],
+    enc_3d[:, 2],
+    # c=inputs[:, 0].cpu(),
+    c=targets[mask].cpu().numpy(),
+    cmap="viridis",
+    s=10,
+)
+ax1.set_title("Colored by target")
+
+ax2 = fig.add_subplot(122, projection="3d")
+ax2.scatter(
+    enc_3d[:, 0],
+    enc_3d[:, 1],
+    enc_3d[:, 2],
+    # c=inputs[:, 1].cpu(),
+    c=inputs[: embeddings.shape[0], list_len].cpu().numpy(),
+    cmap="viridis",
+    s=10,
+)
+ax2.set_title("Colored by index selector")
+
+# ax3 = fig.add_subplot(133, projection="3d")
+# ax3.scatter(
+#     enc_3d[:, 0],
+#     enc_3d[:, 1],
+#     enc_3d[:, 2],
+#     # c=inputs[:, 2].cpu(),
+#     c=torch.stack(
+#         [
+#             inputs[: embeddings[mask].shape[0], 0],
+#             inputs[: embeddings[mask].shape[0], 1],
+#             inputs[: embeddings[mask].shape[0], 2],
+#         ],
+#         dim=1,
+#     )
+#     .float()
+#     .cpu()
+#     .numpy()
+#     / (k - 1),
+#     cmap="viridis",
+#     s=10,
+# )
+# ax3.set_title("Colored by item 2")
+
+plt.tight_layout()
+# plt.savefig("enc_pca_3d.png", dpi=150)
+plt.show()
+
+
+# __
+
 
 plt.rcParams["savefig.dpi"] = 300
 fig = plt.figure(figsize=(10, 8))
