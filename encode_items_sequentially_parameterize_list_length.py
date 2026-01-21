@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 k = 7
-list_len = 3
+list_len = 4
 
 torch.manual_seed(0)
 
@@ -61,14 +61,16 @@ inputs_train = inputs[train_mask]
 targets_train = targets[train_mask]
 
 batch_sz = 999999999
+# batch_sz = 10000
 n_steps = 1000000
 
 optimizer = torch.optim.AdamW(
     # model.parameters(), lr=1e-5, weight_decay=1.0, betas=(0.9, 0.95)
     model.parameters(),
-    lr=3e-4,
-    # lr=6e-4,
-    weight_decay=0.04,
+    # lr=3e-4,
+    # lr=1e-3,
+    lr=6e-4,
+    weight_decay=0.05,
     betas=(0.9, 0.95),
 )
 
@@ -135,6 +137,7 @@ for step in range(n_steps):
             print(
                 step,
                 f"val_loss={val_loss.item():.6g} train_loss={train_loss.item():.6g} test_loss={test_loss.item():.6g} test_acc={test_acc.item():.4f}",
+                # f"test_loss={test_loss.item():.6g} test_acc={test_acc.item():.4f}",
             )
 
         checkpoint_path = run_dir / f"step_{step}.pt"

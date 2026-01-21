@@ -11,7 +11,7 @@ import torch.nn.functional as F
 from sklearn.decomposition import PCA
 
 k = 7
-list_len = 3
+list_len = 4
 
 torch.manual_seed(0)
 
@@ -74,7 +74,8 @@ targets_train = targets[train_mask]
 # checkpoint_path = "runs/encode_items_sequentially/20260119/140951/step_120000.pt"
 # checkpoint_path = "runs/encode_items_sequentially/20260119/152649/step_20000.pt"
 # checkpoint_path = "runs/encode_items_sequentially/20260119/153356/step_230000.pt"
-checkpoint_path = "runs/encode_items_sequentially/20260120/152610/step_10000.pt"
+# checkpoint_path = "runs/encode_items_sequentially/20260120/152610/step_10000.pt"
+checkpoint_path = "runs/encode_items_sequentially/20260120/183607/step_30000.pt"
 
 
 if os.path.exists(checkpoint_path):
@@ -98,7 +99,8 @@ if os.path.exists(checkpoint_path):
 #     6,
 # ]  # this is the order the values seems to be encoded in. plotting model.l1.weight shows a straight line in 3d. see plots/l1_weight_3d-20260116-175750.png
 # perm = [0, 1, 2, 5, 3, 4, 6]
-perm = [1, 0, 5, 2, 3, 4, 6]
+# perm = [1, 0, 5, 2, 3, 4, 6]
+perm = [5, 1, 3, 6, 4, 0, 2]
 model.l1.weight.data = model.l1.weight.data[perm]
 model.l3.weight.data = model.l3.weight.data[perm]
 
@@ -168,7 +170,9 @@ embeddings = y
 # mask = inputs[:, list_len] == 2
 mask = torch.ones(embeddings.shape[0]).bool()
 # mask = torch.rand(embeddings.shape[0]) < 0.03
-# mask[25:] = False
+# mask[k * list_len * 3 :] = False
+# mask &= inputs[:, list_len] == 0
+print(mask)
 # mask = (inputs[:, :3] == 0).any(dim=-1) & (
 #     (inputs[:, :3] == 0)
 #     | (inputs[:, :3] == 2)
@@ -203,7 +207,7 @@ print(embeddings.shape)
 
 
 pca = PCA(n_components=3)
-enc_3d = pca.fit_transform(embeddings)
+enc_3d = pca.fit_transform(embeddings[mask])
 
 print(f"PCA explained variance ratio: {pca.explained_variance_ratio_}")
 print(f"Total variance explained: {pca.explained_variance_ratio_.sum():.4f}")
@@ -213,52 +217,67 @@ print(f"Total variance explained: {pca.explained_variance_ratio_.sum():.4f}")
 # 3D scatter plot
 fig = plt.figure(figsize=(12, 5))
 
-ax1 = fig.add_subplot(121, projection="3d")
-ax1.scatter(
-    enc_3d[:, 0],
-    enc_3d[:, 1],
-    enc_3d[:, 2],
-    # c=inputs[:, 0].cpu(),
-    c=targets[mask].cpu().numpy(),
-    cmap="viridis",
-    s=10,
-)
-ax1.set_title("Colored by target")
-
-ax2 = fig.add_subplot(122, projection="3d")
-ax2.scatter(
-    enc_3d[:, 0],
-    enc_3d[:, 1],
-    enc_3d[:, 2],
-    # c=inputs[:, 1].cpu(),
-    c=inputs[: embeddings.shape[0], list_len].cpu().numpy(),
-    cmap="viridis",
-    s=10,
-)
-ax2.set_title("Colored by index selector")
-
-# ax3 = fig.add_subplot(133, projection="3d")
-# ax3.scatter(
+# ax1 = fig.add_subplot(131, projection="3d")
+# ax1.scatter(
 #     enc_3d[:, 0],
 #     enc_3d[:, 1],
 #     enc_3d[:, 2],
-#     # c=inputs[:, 2].cpu(),
-#     c=torch.stack(
-#         [
-#             inputs[: embeddings[mask].shape[0], 0],
-#             inputs[: embeddings[mask].shape[0], 1],
-#             inputs[: embeddings[mask].shape[0], 2],
-#         ],
-#         dim=1,
-#     )
-#     .float()
-#     .cpu()
-#     .numpy()
-#     / (k - 1),
+#     # c=inputs[:, 0].cpu(),
+#     c=targets[mask].cpu().numpy(),
 #     cmap="viridis",
 #     s=10,
 # )
+# ax1.set_title("Colored by target")
+
+# ax2 = fig.add_subplot(132, projection="3d")
+# ax2.scatter(
+#     enc_3d[:, 0],
+#     enc_3d[:, 1],
+#     enc_3d[:, 2],
+#     # c=inputs[:, 1].cpu(),
+#     c=inputs[: embeddings.shape[0], list_len].cpu().numpy(),
+#     cmap="viridis",
+#     s=10,
+# )
+# ax2.set_title("Colored by index selector")
+
+ax3 = fig.add_subplot(111, projection="3d")
+ax3.scatter(
+    enc_3d[:, 0],
+    enc_3d[:, 1],
+    enc_3d[:, 2],
+    # c=range(embeddings[mask].shape[0]),
+    c=targets[mask].cpu().numpy(),
+    # c=inputs[mask][:, 3].cpu(),
+    # c=inputs[:, 2].cpu(),
+    # c=torch.stack(
+    #     [
+    #         inputs[: embeddings[mask].shape[0], 0],
+    #         inputs[: embeddings[mask].shape[0], 1],
+    #         inputs[: embeddings[mask].shape[0], 2],
+    #     ],
+    #     dim=1,
+    # )
+    # .float()
+    # .cpu()
+    # .numpy()
+    # / (k - 1),
+    # cmap="viridis",
+    s=10,
+)
 # ax3.set_title("Colored by item 2")
+
+# for i in range(embeddings[mask].shape[0]):
+#     # s = str(i)
+#     s = str(inputs[mask][i].cpu().numpy())
+#     # s = str(inputs[mask][i, :list_len].cpu().numpy())
+#     ax3.text(
+#         enc_3d[i, 0],
+#         enc_3d[i, 1],
+#         enc_3d[i, 2],
+#         s,
+#         fontsize=12,
+#     )
 
 plt.tight_layout()
 # plt.savefig("enc_pca_3d.png", dpi=150)
@@ -300,8 +319,8 @@ ax.scatter(
 
 # for i in range(embeddings[mask].shape[0]):
 #     # s = str(i)
-#     # s = str(inputs[i].cpu().numpy())
-#     s = str(inputs[i, :3].cpu().numpy())
+#     # s = str(inputs[mask][i].cpu().numpy())
+#     s = str(inputs[mask][i, :3].cpu().numpy())
 #     ax.text(
 #         embeddings[mask][i, 0],
 #         embeddings[mask][i, 1],
